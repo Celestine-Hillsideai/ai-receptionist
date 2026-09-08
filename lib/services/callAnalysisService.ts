@@ -51,6 +51,33 @@ interface CallerInfo {
   phone: string | null;
 }
 
+/**
+ * Fills in the caller's name/organization from the extraction the first
+ * time they're stated — `findOrCreateCaller` only ever inserts `{ phone }`,
+ * so without this, a correctly extracted caller_name/organization (it's
+ * right there in extracted_data_json) never reaches the `callers` table and
+ * the dashboard shows "Unknown Caller" forever, even after a successful
+ * analysis. Only fills currently-null fields — doesn't overwrite an
+ * established name with whatever a later, possibly-misheard call says.
+ * Runs on every analysis read (including the cache-hit path), so it also
+ * self-heals calls that were analyzed before this fix existed.
+ */
+async function backfillCallerIdentity(
+  supabase: SupabaseClient,
+  callerId: string | null,
+  caller: CallerInfo | null,
+  extraction: CallExtraction
+): Promise<void> {
+  if (!callerId) return;
+  const patch: Record<string, string> = {};
+  if (extraction.caller_name && !caller?.name) patch.name = extraction.caller_name;
+  if (extraction.organization && !caller?.organization) patch.organization = extraction.organization;
+  if (Object.keys(patch).length === 0) return;
+
+  const { error } = await supabase.from("callers").update(patch).eq("id", callerId);
+  if (error) console.error(`[callAnalysisService] Failed to backfill caller ${callerId} identity:`, error);
+}
+
 interface CallInfo {
   startedAt: string | null;
   durationSeconds: number | null;
@@ -142,6 +169,7 @@ export async function analyzeCall(
   if (existingAnalysis?.analysis_status === "completed") {
     const stored = CallExtractionSchema.safeParse(existingAnalysis.extracted_data_json);
     if (stored.success) {
+      await backfillCallerIdentity(supabase, call.caller_id, caller ?? null, stored.data);
       return buildResult(callId, stored.data, callInfo, caller ?? null);
     }
     // Stored extraction predates this field or fails validation — degrade
@@ -247,6 +275,8 @@ export async function analyzeCall(
     });
     if (appointmentError) throw appointmentError;
   }
+
+  await backfillCallerIdentity(supabase, call.caller_id, caller ?? null, extraction);
 
   return buildResult(callId, extraction, callInfo, caller ?? null);
 }
