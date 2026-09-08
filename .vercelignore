@@ -1,0 +1,15 @@
+# tools/n8n-mcp and tools/n8n-skills are cloned local tooling (see
+# tools/README.md and .gitignore) — not part of the deployed app. Vercel's
+# monorepo "services" auto-detection was misreading tools/n8n-mcp as a
+# Jekyll site and failing on the digit in its folder name.
+tools/n8n-mcp
+tools/n8n-skills
+
+# Never ship local secrets in the deployment source — env vars are set on
+# Vercel directly (see temp/outputs/vercel-env-push.sh). Vercel warned
+# "Detected .env file, it is strongly recommended to use Vercel's env
+# handling instead" on the first deploy, meaning it was uploaded.
+.env
+.env.local
+.env*.local
+
