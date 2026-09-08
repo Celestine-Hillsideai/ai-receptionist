@@ -1,0 +1,171 @@
+{
+  "name": "Notify: Send Urgent Call Notification",
+  "nodes": [
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000001",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [-400, 0],
+      "parameters": {
+        "inputSource": "workflowInputs",
+        "workflowInputs": {
+          "values": [
+            { "name": "call_id", "type": "string" },
+            { "name": "caller_name", "type": "string" },
+            { "name": "organization", "type": "string" },
+            { "name": "purpose", "type": "string" },
+            { "name": "message", "type": "string" },
+            { "name": "requested_action", "type": "string" },
+            { "name": "callback_requested", "type": "boolean" },
+            { "name": "callback_number", "type": "string" },
+            { "name": "urgency_level", "type": "string" },
+            { "name": "deadline", "type": "string" },
+            { "name": "call_time", "type": "string" },
+            { "name": "duration_seconds", "type": "number" },
+            { "name": "follow_up_status", "type": "string" },
+            { "name": "recipient_email", "type": "string" }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000002",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-160, 0],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "Uses Resend's API (POST /emails) instead of SMTP — n8n's generic SMTP node has a documented, unresolved bug sending via Gmail on port 465 (community-confirmed, no settings fix; port 587 is blocked on this network). from address uses Resend's sandbox sender (onboarding@resend.dev), which can only deliver to the email the Resend account was signed up with until a custom domain is verified.",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { from: 'AI Receptionist <onboarding@resend.dev>', to: [$json.recipient_email], subject: `Urgent call: ${$json.caller_name || 'Unknown caller'} — ${$json.purpose || 'New call'}`, text: `Caller: ${$json.caller_name || 'Unknown'}\\nOrganization: ${$json.organization || 'N/A'}\\nPurpose: ${$json.purpose || 'N/A'}\\nMessage: ${$json.message || 'N/A'}\\nRequested action: ${$json.requested_action || 'N/A'}\\nCallback requested: ${$json.callback_requested ? 'Yes' : 'No'}\\nCallback number: ${$json.callback_number || 'N/A'}\\nUrgency: ${$json.urgency_level}\\nDeadline: ${$json.deadline || 'N/A'}\\nCall time: ${$json.call_time || 'N/A'}\\nDuration: ${$json.duration_seconds || 0} seconds\\nFollow-up status: ${$json.follow_up_status}` } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "sLoVObAEczezJZjg", "name": "Resend API" }
+      }
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000003",
+      "name": "Mark Sent",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [120, -120],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            { "id": "a1", "name": "call_id", "type": "string", "value": "={{ $('When Executed by Another Workflow').item.json.call_id }}" },
+            { "id": "a2", "name": "recipient", "type": "string", "value": "={{ $('When Executed by Another Workflow').item.json.recipient_email }}" },
+            { "id": "a3", "name": "status", "type": "string", "value": "sent" },
+            { "id": "a4", "name": "error_message", "type": "string", "value": "" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000004",
+      "name": "Mark Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [120, 120],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            { "id": "b1", "name": "call_id", "type": "string", "value": "={{ $('When Executed by Another Workflow').item.json.call_id }}" },
+            { "id": "b2", "name": "recipient", "type": "string", "value": "={{ $('When Executed by Another Workflow').item.json.recipient_email }}" },
+            { "id": "b3", "name": "status", "type": "string", "value": "failed" },
+            { "id": "b4", "name": "error_message", "type": "string", "value": "={{ $json.error?.message ?? String($json.error ?? 'Unknown error') }}" }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000005",
+      "name": "Combine Notification Result",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [360, 0],
+      "parameters": {}
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000006",
+      "name": "Record Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [600, 0],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "URL uses host.docker.internal since n8n runs in Docker and localhost inside the container isn't the host machine. Update for any non-local deployment (e.g. the app's real APP_URL).",
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/internal/record-notification",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { call_id: $json.call_id, channel: 'email', recipient: $json.recipient, status: $json.status, error_message: $json.error_message || null } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "UNksr5cxVM6Supqh", "name": "AI Receptionist Internal API" }
+      }
+    },
+    {
+      "id": "c1a1a1a1-0001-4000-8000-000000000007",
+      "name": "Return",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [860, 0],
+      "parameters": {
+        "mode": "manual",
+        "includeOtherFields": false,
+        "assignments": {
+          "assignments": [
+            { "id": "r1", "name": "ok", "type": "boolean", "value": "={{ $('Combine Notification Result').item.json.status === 'sent' }}" },
+            { "id": "r2", "name": "notification_status", "type": "string", "value": "={{ $('Combine Notification Result').item.json.status }}" },
+            { "id": "r3", "name": "call_id", "type": "string", "value": "={{ $('Combine Notification Result').item.json.call_id }}" }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": { "main": [[{ "node": "Send Email", "type": "main", "index": 0 }]] },
+    "Send Email": {
+      "main": [
+        [{ "node": "Mark Sent", "type": "main", "index": 0 }],
+        [{ "node": "Mark Failed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Mark Sent": { "main": [[{ "node": "Combine Notification Result", "type": "main", "index": 0 }]] },
+    "Mark Failed": { "main": [[{ "node": "Combine Notification Result", "type": "main", "index": 0 }]] },
+    "Combine Notification Result": { "main": [[{ "node": "Record Notification", "type": "main", "index": 0 }]] },
+    "Record Notification": {
+      "main": [
+        [{ "node": "Return", "type": "main", "index": 0 }],
+        [{ "node": "Return", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

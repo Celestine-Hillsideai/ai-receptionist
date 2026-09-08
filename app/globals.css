@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+/*
+ * Design system for the admin dashboard (spec §29-30).
+ *
+ * Concept: this tool's direct ancestor is the paper telephone message
+ * slip — a secretary's ledger for capturing who called, why, and what's
+ * owed. The UI borrows that object's actual logic (ruled rows, a marked
+ * urgency flag, one entry per call) rather than its decoration. Color is
+ * spent on exactly one thing — urgency — and nowhere else, so a scan down
+ * the page tells you what needs attention without reading a word.
+ */
+
+:root {
+  --paper: #eef0f2;
+  --panel: #f7f8f9;
+  --ink: #14213d;
+  --ink-quiet: #565f78;
+  --rule: #ccd1d9;
+  --rule-quiet: #dde1e6;
+
+  --urgency-critical: #b3261e;
+  --urgency-critical-quiet: #f6e4e2;
+  --urgency-high: #96650f;
+  --urgency-high-quiet: #f4ead4;
+  --urgency-normal: var(--ink-quiet);
+  --urgency-normal-quiet: #e7e9ed;
+
+  --status-done: #3f6b52;
+  --status-done-quiet: #e3ede7;
+
+  --focus-ring: #14213d;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-panel: var(--panel);
+  --color-ink: var(--ink);
+  --color-ink-quiet: var(--ink-quiet);
+  --color-rule: var(--rule);
+  --color-rule-quiet: var(--rule-quiet);
+
+  --color-urgency-critical: var(--urgency-critical);
+  --color-urgency-critical-quiet: var(--urgency-critical-quiet);
+  --color-urgency-high: var(--urgency-high);
+  --color-urgency-high-quiet: var(--urgency-high-quiet);
+  --color-urgency-normal: var(--urgency-normal);
+  --color-urgency-normal-quiet: var(--urgency-normal-quiet);
+
+  --color-status-done: var(--status-done);
+  --color-status-done-quiet: var(--status-done-quiet);
+
+  --font-sans: var(--font-plex-sans);
+  --font-serif: var(--font-plex-serif);
+  --font-mono: var(--font-plex-mono);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-feature-settings: "tnum" 1, "cv05" 1;
+}
+
+* {
+  border-color: var(--rule);
+}
+
+::selection {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

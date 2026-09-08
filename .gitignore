@@ -1,0 +1,59 @@
+/temp/outputs/*
+!/temp/outputs/README.md
+/temp/resources/*
+!/temp/resources/README.md
+
+.env
+tools/n8n-mcp/.env
+
+# Contains a live N8N_API_KEY — copy .mcp.json.example to .mcp.json and fill
+# in your own key (spec §18: never commit API keys/tokens).
+.mcp.json
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# Claude Code local tooling — skills installed via `npx skills add` (e.g.
+# frontend-design) live here as symlinks to machine-specific absolute paths,
+# so they aren't portable to commit. Re-run the install command instead of
+# expecting these to survive a clone.
+/.claude/
+/.agents/
+skills-lock.json
+
+# tools/n8n-mcp and tools/n8n-skills are `git clone`d copies of external
+# repos (see tools/README.md) — each carries its own .git history and, for
+# n8n-mcp, its own node_modules. Treated as a fetched local dependency, not
+# vendored project source: re-clone per tools/README.md rather than
+# expecting these to come from this repo's history.
+/tools/n8n-mcp/
+/tools/n8n-skills/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# testing
+/coverage

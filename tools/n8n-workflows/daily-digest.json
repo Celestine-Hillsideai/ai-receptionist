@@ -1,0 +1,89 @@
+{
+  "name": "Daily Digest",
+  "nodes": [
+    {
+      "id": "d3d3d3d3-0004-4000-8000-000000000001",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [-500, 0],
+      "parameters": {
+        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] }
+      }
+    },
+    {
+      "id": "d3d3d3d3-0004-4000-8000-000000000002",
+      "name": "Get Daily Summary",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-260, 0],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "URL uses host.docker.internal since n8n runs in Docker and localhost inside the container isn't the host machine. Update for any non-local deployment.",
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3000/api/daily-summary",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": false,
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "UNksr5cxVM6Supqh", "name": "AI Receptionist Internal API" }
+      }
+    },
+    {
+      "id": "d3d3d3d3-0004-4000-8000-000000000003",
+      "name": "Send Digest",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, -100],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "Uses Resend's API instead of SMTP — n8n's generic SMTP node has a documented, unresolved bug sending via Gmail on port 465. from address uses Resend's sandbox sender (onboarding@resend.dev), which can only deliver to the email the Resend account was signed up with until a custom domain is verified.",
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ (() => {\n  const d = $json.data;\n  const line = (label, val) => `${label}: ${val}`;\n  const listOrNone = (arr, fmt) => arr.length ? arr.map((x, i) => `${i + 1}. ${fmt(x)}`).join('\\n') : 'None';\n  const header = `DAILY OFFICE CALL SUMMARY\\nDate: ${d.date}\\n\\n` +\n    `${line('Total Calls', d.totalCalls)}\\n${line('Urgent Calls', d.urgentCalls)}\\n` +\n    `${line('Callback Requests', d.callbackRequests)}\\n${line('Appointments Requested', d.appointmentsRequested)}\\n` +\n    `${line('Follow-ups Pending', d.followUpsPending)}\\n`;\n  const urgent = `\\nURGENT CALLS\\n` + listOrNone(d.urgent, x => `${x.callerName || 'Unknown'} (${x.organization || 'N/A'}) — ${x.summary || 'No summary'} [${x.urgencyLevel}${x.deadline ? ', due ' + x.deadline : ''}]`);\n  const callbacks = `\\n\\nCALLBACK REQUESTS\\n` + listOrNone(d.callbacks, x => `${x.callerName || 'Unknown'} — ${x.callbackNumber || 'N/A'} — ${x.message || ''}`);\n  const appts = `\\n\\nAPPOINTMENT REQUESTS\\n` + listOrNone(d.appointments, x => `${x.callerName || 'Unknown'} — ${x.requestedDate || 'TBD'} ${x.requestedTime || ''} — ${x.notes || ''}`);\n  const other = `\\n\\nOTHER IMPORTANT CALLS\\n` + listOrNone(d.otherImportant, x => `${x.callerName || 'Unknown'} — ${x.summary || ''} (${x.intent})`);\n  const followups = `\\n\\nFOLLOW-UP ITEMS\\n` + listOrNone(d.followUps, x => `${x.callerName || 'Unknown'} — due ${x.dueAt || 'N/A'} — ${x.notes || ''}`);\n  return { from: 'AI Receptionist <onboarding@resend.dev>', to: [d.recipientEmail], subject: `Daily Office Call Summary — ${d.date}`, text: header + urgent + callbacks + appts + other + followups };\n})() }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "sLoVObAEczezJZjg", "name": "Resend API" }
+      }
+    },
+    {
+      "id": "d3d3d3d3-0004-4000-8000-000000000004",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [0, 150],
+      "notes": "No error-workflow/alerting channel configured yet (spec: unattended workflows should have one). n8n's own execution history is the failure record for now — check n8n_executions for this workflow if the digest doesn't arrive.",
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": { "main": [[{ "node": "Get Daily Summary", "type": "main", "index": 0 }]] },
+    "Get Daily Summary": {
+      "main": [
+        [{ "node": "Send Digest", "type": "main", "index": 0 }],
+        [{ "node": "Log Failure", "type": "main", "index": 0 }]
+      ]
+    },
+    "Send Digest": {
+      "main": [
+        [],
+        [{ "node": "Log Failure", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

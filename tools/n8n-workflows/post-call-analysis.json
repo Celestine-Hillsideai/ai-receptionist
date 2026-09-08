@@ -1,0 +1,171 @@
+{
+  "name": "Post-Call Analysis",
+  "nodes": [
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000001",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [-600, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "post-call-analysis",
+        "responseMode": "responseNode",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "UNksr5cxVM6Supqh", "name": "AI Receptionist Internal API" }
+      }
+    },
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000002",
+      "name": "Analyze Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [-360, 0],
+      "onError": "continueErrorOutput",
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "notes": "URL uses host.docker.internal since n8n runs in Docker and localhost inside the container isn't the host machine. Update for any non-local deployment (e.g. the app's real APP_URL).",
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/api/internal/analyze-call",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { call_id: $json.body.callId } }}",
+        "options": {}
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "UNksr5cxVM6Supqh", "name": "AI Receptionist Internal API" }
+      }
+    },
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000003",
+      "name": "Should Notify?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [-100, 0],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": { "version": 2, "leftValue": "", "caseSensitive": true, "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond1",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true },
+              "leftValue": "={{ ['immediate','prompt'].includes($json.data.notificationUrgency) }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000004",
+      "name": "Notify: Send Urgent Call Notification",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [160, -120],
+      "onError": "continueErrorOutput",
+      "parameters": {
+        "source": "database",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "Zr4Ilqjsg8SCadYr",
+          "cachedResultName": "Notify: Send Urgent Call Notification"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "call_id": "={{ $('Analyze Call').item.json.data.callId }}",
+            "caller_name": "={{ $('Analyze Call').item.json.data.notification.callerName }}",
+            "organization": "={{ $('Analyze Call').item.json.data.notification.organization }}",
+            "purpose": "={{ $('Analyze Call').item.json.data.notification.purpose }}",
+            "message": "={{ $('Analyze Call').item.json.data.notification.message }}",
+            "requested_action": "={{ $('Analyze Call').item.json.data.notification.requestedAction }}",
+            "callback_requested": "={{ $('Analyze Call').item.json.data.notification.callbackRequested }}",
+            "callback_number": "={{ $('Analyze Call').item.json.data.notification.callbackNumber }}",
+            "urgency_level": "={{ $('Analyze Call').item.json.data.notification.urgencyLevel }}",
+            "deadline": "={{ $('Analyze Call').item.json.data.notification.deadline }}",
+            "call_time": "={{ $('Analyze Call').item.json.data.notification.callTime }}",
+            "duration_seconds": "={{ $('Analyze Call').item.json.data.notification.durationSeconds }}",
+            "follow_up_status": "={{ $('Analyze Call').item.json.data.notification.followUpStatus }}",
+            "recipient_email": "={{ $('Analyze Call').item.json.data.notification.recipientEmail }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            { "id": "call_id", "displayName": "call_id", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "caller_name", "displayName": "caller_name", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "organization", "displayName": "organization", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "purpose", "displayName": "purpose", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "message", "displayName": "message", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "requested_action", "displayName": "requested_action", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "callback_requested", "displayName": "callback_requested", "type": "boolean", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "callback_number", "displayName": "callback_number", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "urgency_level", "displayName": "urgency_level", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "deadline", "displayName": "deadline", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "call_time", "displayName": "call_time", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "duration_seconds", "displayName": "duration_seconds", "type": "number", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "follow_up_status", "displayName": "follow_up_status", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true },
+            { "id": "recipient_email", "displayName": "recipient_email", "type": "string", "required": false, "defaultMatch": false, "display": true, "canBeUsedToMatch": true }
+          ]
+        },
+        "mode": "once",
+        "options": {}
+      }
+    },
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000005",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [420, 0],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { status: 'ok', analysis_status: ($('Analyze Call').item.json.data && $('Analyze Call').item.json.data.analysisStatus) || null } }}",
+        "options": { "responseCode": 200 }
+      }
+    },
+    {
+      "id": "b2b2b2b2-0002-4000-8000-000000000006",
+      "name": "Respond Error",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [160, 220],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { error: 'internal_error', message: 'Failed to process call analysis' } }}",
+        "options": { "responseCode": 500 }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook": { "main": [[{ "node": "Analyze Call", "type": "main", "index": 0 }]] },
+    "Analyze Call": {
+      "main": [
+        [{ "node": "Should Notify?", "type": "main", "index": 0 }],
+        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+      ]
+    },
+    "Should Notify?": {
+      "main": [
+        [{ "node": "Notify: Send Urgent Call Notification", "type": "main", "index": 0 }],
+        [{ "node": "Respond Success", "type": "main", "index": 0 }]
+      ]
+    },
+    "Notify: Send Urgent Call Notification": {
+      "main": [
+        [{ "node": "Respond Success", "type": "main", "index": 0 }],
+        [{ "node": "Respond Error", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
