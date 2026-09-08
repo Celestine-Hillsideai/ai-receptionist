@@ -6,45 +6,64 @@
       "name": "Schedule Trigger",
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.4,
-      "position": [-500, 0],
+      "position": [
+        -500,
+        0
+      ],
       "parameters": {
-        "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] }
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 8 * * *"
+            }
+          ]
+        }
       }
     },
     {
       "id": "d3d3d3d3-0004-4000-8000-000000000002",
       "name": "Get Daily Summary",
+      "notes": "URL uses host.docker.internal since n8n runs in Docker and localhost inside the container isn't the host machine. Update for any non-local deployment.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [-260, 0],
-      "onError": "continueErrorOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
-      "notes": "URL uses host.docker.internal since n8n runs in Docker and localhost inside the container isn't the host machine. Update for any non-local deployment.",
+      "onError": "continueErrorOutput",
+      "position": [
+        -260,
+        0
+      ],
       "parameters": {
         "method": "GET",
-        "url": "http://host.docker.internal:3000/api/daily-summary",
+        "url": "https://ai-receptionist-hillsideai.vercel.app/api/daily-summary",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendBody": false,
         "options": {}
       },
       "credentials": {
-        "httpHeaderAuth": { "id": "UNksr5cxVM6Supqh", "name": "AI Receptionist Internal API" }
+        "httpHeaderAuth": {
+          "id": "OhCoa5gZjmwm4nW3",
+          "name": "AI Receptionist Internal API"
+        }
       }
     },
     {
       "id": "d3d3d3d3-0004-4000-8000-000000000003",
       "name": "Send Digest",
+      "notes": "Uses Resend's API instead of SMTP — n8n's generic SMTP node has a documented, unresolved bug sending via Gmail on port 465. from address uses Resend's sandbox sender (onboarding@resend.dev), which can only deliver to the email the Resend account was signed up with until a custom domain is verified.",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [0, -100],
-      "onError": "continueErrorOutput",
       "retryOnFail": true,
       "maxTries": 3,
       "waitBetweenTries": 5000,
-      "notes": "Uses Resend's API instead of SMTP — n8n's generic SMTP node has a documented, unresolved bug sending via Gmail on port 465. from address uses Resend's sandbox sender (onboarding@resend.dev), which can only deliver to the email the Resend account was signed up with until a custom domain is verified.",
+      "onError": "continueErrorOutput",
+      "position": [
+        0,
+        -100
+      ],
       "parameters": {
         "method": "POST",
         "url": "https://api.resend.com/emails",
@@ -57,33 +76,69 @@
         "options": {}
       },
       "credentials": {
-        "httpHeaderAuth": { "id": "sLoVObAEczezJZjg", "name": "Resend API" }
+        "httpHeaderAuth": {
+          "id": "5jxIVW4TeCw5DCMa",
+          "name": "Resend API"
+        }
       }
     },
     {
       "id": "d3d3d3d3-0004-4000-8000-000000000004",
       "name": "Log Failure",
+      "notes": "No error-workflow/alerting channel configured yet (spec: unattended workflows should have one). n8n's own execution history is the failure record for now — check n8n_executions for this workflow if the digest doesn't arrive.",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [0, 150],
-      "notes": "No error-workflow/alerting channel configured yet (spec: unattended workflows should have one). n8n's own execution history is the failure record for now — check n8n_executions for this workflow if the digest doesn't arrive.",
+      "position": [
+        0,
+        150
+      ],
       "parameters": {}
     }
   ],
   "connections": {
-    "Schedule Trigger": { "main": [[{ "node": "Get Daily Summary", "type": "main", "index": 0 }]] },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Daily Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Get Daily Summary": {
       "main": [
-        [{ "node": "Send Digest", "type": "main", "index": 0 }],
-        [{ "node": "Log Failure", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Send Digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Send Digest": {
       "main": [
         [],
-        [{ "node": "Log Failure", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

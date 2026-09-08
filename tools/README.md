@@ -9,6 +9,7 @@ Scripts and integrations the Agent (Claude Code) can invoke to get things done. 
 
 - [n8n-workflows/](n8n-workflows/) — version-controlled JSON exports of this project's own n8n workflows (Workflow B/C/D from the spec), backing up what's built live via `n8n-mcp`.
 - [webhook-simulator/](webhook-simulator/) — sends simulated Vapi-style webhook events at `POST /api/webhooks/voice` for local testing without a live Vapi account.
+- [vapi/](vapi/) — `sync-assistant.js` creates/updates the live Vapi assistant (model, voice, transcriber, webhook server URL) from `prompts/receptionist-voice.v1.md` and env config, so the voice-agent configuration is code, not a manual dashboard edit.
 
 Examples of what else belongs here as the project grows:
 
