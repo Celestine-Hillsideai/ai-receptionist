@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { updateFollowUp, parseFollowUpStatus } from "@/lib/services/followUpService";
 
-// Server Action, not a public API route: the dashboard has no session auth
-// yet (Phase 5 scope — see docs/API.md), so mutations stay same-origin
-// rather than adding another unauthenticated write endpoint. Still treats
+// Server Action, not a public API route: mutations stay same-origin rather
+// than adding another write endpoint outside the dashboard's own password
+// gate (proxy.ts). Still treats
 // the submission as untrusted input per Next's Server Actions guidance —
 // every field is validated, and the id used to scope the update is a
 // reference the client supplies, not data it can set arbitrarily.

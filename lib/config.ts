@@ -32,6 +32,12 @@ interface AppConfig {
   // VAPI_WEBHOOK_SECRET.
   internalApiSecret: string | null;
 
+  // Shared-password gate for the admin dashboard (docs/DEPLOYMENT.md option
+  // 1) — a stopgap ahead of real per-user auth. Unset means the dashboard
+  // stays open, matching how every other optional secret in this file
+  // degrades for local dev; this one must be set before a real deployment.
+  dashboardPassword: string | null;
+
   emailProvider: string | null;
   emailApiKey: string | null;
   emailFrom: string | null;
@@ -77,6 +83,7 @@ function loadConfig(): AppConfig {
     n8nBaseUrl: optional("N8N_BASE_URL"),
     n8nWebhookUrl: optional("N8N_WEBHOOK_URL"),
     internalApiSecret: optional("INTERNAL_API_SECRET"),
+    dashboardPassword: optional("DASHBOARD_PASSWORD"),
 
     emailProvider: optional("EMAIL_PROVIDER"),
     emailApiKey: optional("EMAIL_API_KEY"),

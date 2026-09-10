@@ -4,18 +4,18 @@ The dashboard and API routes are a standard Next.js App Router project, so Verce
 
 ## Before you deploy — read this
 
-**The dashboard has no login yet.** Phase 5 shipped the UI (Dashboard, Calls, Call Detail, Daily Summary, Settings) without dashboard authentication — a deliberate scope decision, not an oversight (see `workflows/build-ai-receptionist.md` §5 for the RBAC this is standing in for). Call transcripts, caller phone numbers, and message content are all visible to anyone who can reach the deployed URL.
+**The dashboard now has a shared-password gate (`proxy.ts` + `DASHBOARD_PASSWORD`), not per-user login yet.** It's the stopgap described below, not the real RBAC thing (see `workflows/build-ai-receptionist.md` §5) — one password for every viewer, no roles, no audit trail of who looked at what. Real per-user auth via Supabase Auth against the `users` table's `role` column (`admin`/`secretary`/`viewer`, see `database/migrations/0001_init.sql`) is still the eventual target.
 
-**"Vercel Authentication" (the free Deployment Protection option) does NOT close this gap — confirmed by testing, not assumption.** It only protects the random per-deployment URL (`<project>-<hash>-<team>.vercel.app`); it does **not** cover the friendly production alias (`<project>-<team>.vercel.app` and any custom domain), which is the URL anyone would actually use. "Password Protection" *does* cover the real domain, but requires Vercel's paid **Advanced Deployment Protection** add-on — on a Hobby/free team it's rejected outright ("Advanced Deployment Protection is not enabled on your team").
+**"Vercel Authentication" (the free Deployment Protection option) does NOT close this gap on its own — confirmed by testing, not assumption.** It only protects the random per-deployment URL (`<project>-<hash>-<team>.vercel.app`); it does **not** cover the friendly production alias (`<project>-<team>.vercel.app` and any custom domain), which is the URL anyone would actually use. "Password Protection" *does* cover the real domain, but requires Vercel's paid **Advanced Deployment Protection** add-on — on a Hobby/free team it's rejected outright ("Advanced Deployment Protection is not enabled on your team").
 
 So on a free plan, the real options are:
 
-1. **Add app-level auth** — a lightweight shared-password gate (Next.js middleware, one env var, cookie session) as a stopgap, or real per-user auth via Supabase Auth matched against the `users` table's `role` column (`admin`/`secretary`/`viewer`, see `database/migrations/0001_init.sql`) for the real thing. Neither exists yet.
+1. **App-level auth** — the shared-password gate (`proxy.ts`, `DASHBOARD_PASSWORD`, cookie session) now exists as a stopgap; real per-user auth via Supabase Auth (see above) is the upgrade from here.
 2. **Upgrade to Vercel Pro** to unlock Password Protection at the platform level (no code change).
 3. **Accept the risk** for now if there's no real caller data yet (e.g. Vapi isn't connected, so nothing but dev seed data is exposed) — but revisit before connecting a real voice channel.
 4. **Pause the deployment** (`vercel pause`) until one of the above is in place.
 
-**Current state of the `hillsideai/ai-receptionist` deployment: option 3 — knowingly left open, no auth, because no real caller data exists yet (Vapi not connected).** Revisit this before wiring up Vapi.
+**Current state of the `hillsideai/ai-receptionist` deployment: option 1 — `DASHBOARD_PASSWORD` must be set in the Vercel project (see step 4 below) for the gate to actually engage; unset, the dashboard stays open (same "optional secret" convention as every other secret in `lib/config.ts`).**
 
 ## Steps
 
@@ -41,6 +41,7 @@ So on a free plan, the real options are:
    - Required: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
    - Needed for the features that depend on them: `OPENAI_API_KEY`, `VAPI_API_KEY`/`VAPI_ASSISTANT_ID`/`VAPI_WEBHOOK_SECRET`, `N8N_BASE_URL`/`N8N_WEBHOOK_URL`, `INTERNAL_API_SECRET`, `EMAIL_PROVIDER`/`EMAIL_API_KEY`/`EMAIL_FROM`, `SECRETARY_EMAIL`, `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET`/`GOOGLE_REFRESH_TOKEN`
    - **Set `INTERNAL_API_SECRET` before this is publicly reachable** — without it, `/api/webhooks/voice`'s downstream internal endpoints and `/api/calls*` accept unauthenticated requests (fine for local dev only, per spec §18).
+   - **Set `DASHBOARD_PASSWORD` before this is publicly reachable** — without it, `proxy.ts` lets `/dashboard/*` straight through with no login at all (same "optional secret" convention as everything else in `lib/config.ts`, fine for local dev only).
 
    Either `vercel env add <NAME> <production|preview>` per variable (pipe the value via stdin, e.g. `printf '%s' "$value" | vercel env add KEY production --yes`, so it never lands in shell history or command args), or paste `.env`'s contents in bulk via the dashboard's Environment Variables UI.
 

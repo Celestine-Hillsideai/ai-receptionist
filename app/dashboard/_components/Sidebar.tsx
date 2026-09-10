@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logout } from "@/app/login/actions";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -47,6 +48,12 @@ export function Sidebar() {
           );
         })}
       </ul>
+
+      <form action={logout} className="mt-auto pt-6">
+        <button type="submit" className="px-2 text-xs text-ink-quiet hover:text-ink hover:underline">
+          Log out
+        </button>
+      </form>
     </nav>
   );
 }
