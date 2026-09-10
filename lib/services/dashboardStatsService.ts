@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { listCalls, type CallsListItem } from "@/lib/services/callsQueryService";
+import { officeDayBoundsUtc, todayInOfficeTimezone } from "@/lib/timezone";
 
 // Aggregate counts for the Dashboard overview page (spec §29). "Urgent
-// calls" and "calls today" are both scoped to the current UTC day, matching
-// the daily-digest framing (spec §27) — this page is a same-day activity
-// board, not a lifetime backlog view (that's what Calls + filters are for).
+// calls" and "calls today" are both scoped to the current office-timezone
+// (WAT) day, matching the daily-digest framing (spec §27) — this page is a
+// same-day activity board, not a lifetime backlog view (that's what Calls +
+// filters are for).
 
 export interface DashboardStats {
   callsToday: number;
@@ -24,15 +26,8 @@ function embeddedOne<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? value[0] ?? null : value;
 }
 
-function todayBoundsUtc(): { start: string; end: string } {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
-
 export async function getDashboardStats(supabase: SupabaseClient): Promise<DashboardStats> {
-  const { start, end } = todayBoundsUtc();
+  const { start, end } = officeDayBoundsUtc(todayInOfficeTimezone());
   const nowIso = new Date().toISOString();
 
   const [todayCalls, callbackCalls, appointmentCount, overdueCount, recent] = await Promise.all([

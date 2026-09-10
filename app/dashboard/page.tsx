@@ -4,11 +4,17 @@ import { getDashboardStats } from "@/lib/services/dashboardStatsService";
 import { StatCard } from "@/app/dashboard/_components/StatCard";
 import { UrgencyFlag, UrgencyTag } from "@/app/dashboard/_components/UrgencyTag";
 import { formatTime, titleCase } from "@/app/dashboard/_lib/format";
+import { OFFICE_TIMEZONE } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
 function todayLabel(): string {
-  return new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
+  return new Date().toLocaleDateString(undefined, {
+    timeZone: OFFICE_TIMEZONE,
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+  });
 }
 
 export default async function DashboardPage() {

@@ -1,13 +1,23 @@
 // Display formatting only — storage stays UTC/ISO throughout (spec §66).
+// Rendered in the office's timezone (WAT), not the server's UTC clock —
+// this runs server-side in Server Components, so `undefined` locale/timezone
+// options would render in the server's timezone, not the office's.
+
+import { OFFICE_TIMEZONE } from "@/lib/timezone";
 
 export function formatTime(iso: string | null): string {
   if (!iso) return "—";
-  return new Date(iso).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(undefined, {
+    timeZone: OFFICE_TIMEZONE,
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export function formatDateTime(iso: string | null): string {
   if (!iso) return "—";
   return new Date(iso).toLocaleString(undefined, {
+    timeZone: OFFICE_TIMEZONE,
     month: "short",
     day: "numeric",
     hour: "numeric",

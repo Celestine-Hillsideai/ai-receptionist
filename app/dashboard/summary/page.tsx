@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { getDailySummary } from "@/lib/services/dailySummaryService";
 import { StatCard } from "@/app/dashboard/_components/StatCard";
 import { formatDateTime } from "@/app/dashboard/_lib/format";
+import { todayInOfficeTimezone } from "@/lib/timezone";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ function Section({
 export default async function DailySummaryPage(props: PageProps<"/dashboard/summary">) {
   const sp = await props.searchParams;
   const dateParam = Array.isArray(sp.date) ? sp.date[0] : sp.date;
-  const date = isValidDate(dateParam) ? dateParam : new Date().toISOString().slice(0, 10);
+  const date = isValidDate(dateParam) ? dateParam : todayInOfficeTimezone();
 
   const summary = await getDailySummary(getSupabaseAdmin(), date);
 

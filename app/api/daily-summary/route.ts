@@ -4,9 +4,10 @@ import { getConfig } from "@/lib/config";
 import { verifySharedSecret } from "@/lib/services/sharedSecretAuth";
 import { getDailySummary } from "@/lib/services/dailySummaryService";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { todayInOfficeTimezone } from "@/lib/timezone";
 
 // GET /api/daily-summary?date=YYYY-MM-DD (spec §39, §27). Defaults to today
-// (UTC). Used by n8n's Workflow D (Daily Digest) and, later, the dashboard's
+// in the office timezone (WAT). Used by n8n's Workflow D (Daily Digest) and, later, the dashboard's
 // Daily Summary page (spec §29).
 //
 // Auth: gated on the same x-internal-secret as /api/internal/* for now,
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   }
 
   const dateParam = request.nextUrl.searchParams.get("date");
-  const date = dateParam ?? new Date().toISOString().slice(0, 10);
+  const date = dateParam ?? todayInOfficeTimezone();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json(
       { data: null, error: "date must be YYYY-MM-DD", request_id: requestId },

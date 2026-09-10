@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getConfig } from "@/lib/config";
+import { officeDayBoundsUtc } from "@/lib/timezone";
 
-// spec §27. Dates are handled in UTC (spec §66: "Prefer UTC internally and
-// convert for display") — business-hours-aware local time is a §64
-// follow-up, not built yet.
+// spec §27. `date` is a YYYY-MM-DD office-timezone (WAT) calendar day;
+// storage stays UTC throughout (spec §66) via officeDayBoundsUtc.
 //
 // "Follow-ups Pending" is deliberately the full outstanding backlog, not
 // just follow-ups created from today's calls — a secretary's daily digest
@@ -72,12 +72,6 @@ interface CallerRow {
   organization: string | null;
 }
 
-function dayBoundsUtc(date: string): { start: string; end: string } {
-  const start = new Date(`${date}T00:00:00.000Z`);
-  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  return { start: start.toISOString(), end: end.toISOString() };
-}
-
 function firstOf<T>(value: T | T[] | null): T | null {
   if (Array.isArray(value)) return value[0] ?? null;
   return value;
@@ -87,7 +81,7 @@ export async function getDailySummary(
   supabase: SupabaseClient,
   date: string
 ): Promise<DailySummary> {
-  const { start, end } = dayBoundsUtc(date);
+  const { start, end } = officeDayBoundsUtc(date);
 
   const { data: calls, error: callsError } = await supabase
     .from("calls")

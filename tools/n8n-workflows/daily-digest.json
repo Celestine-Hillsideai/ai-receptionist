@@ -51,6 +51,53 @@
       }
     },
     {
+      "id": "d3d3d3d3-0004-4000-8000-000000000005",
+      "name": "Has Calls Today?",
+      "notes": "Skip the email entirely on days with zero calls — the digest used to send unconditionally every day, which meant an empty \"0 calls\" email even when nothing happened.",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -130,
+        0
+      ],
+      "parameters": {
+        "options": {},
+        "conditions": {
+          "options": {
+            "version": 2,
+            "leftValue": "",
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "cond1",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              },
+              "leftValue": "={{ $json.data.totalCalls > 0 }}",
+              "rightValue": ""
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d3d3d3d3-0004-4000-8000-000000000006",
+      "name": "Skipped: No Calls Today",
+      "notes": "Terminal no-op so a zero-call day still shows as a normal (not failed) execution in n8n's history.",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        160,
+        100
+      ],
+      "parameters": {}
+    },
+    {
       "id": "d3d3d3d3-0004-4000-8000-000000000003",
       "name": "Send Digest",
       "notes": "Uses Resend's API instead of SMTP — n8n's generic SMTP node has a documented, unresolved bug sending via Gmail on port 465. from address uses Resend's sandbox sender (onboarding@resend.dev), which can only deliver to the email the Resend account was signed up with until a custom domain is verified.",
@@ -111,7 +158,7 @@
       "main": [
         [
           {
-            "node": "Send Digest",
+            "node": "Has Calls Today?",
             "type": "main",
             "index": 0
           }
@@ -119,6 +166,24 @@
         [
           {
             "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Has Calls Today?": {
+      "main": [
+        [
+          {
+            "node": "Send Digest",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Skipped: No Calls Today",
             "type": "main",
             "index": 0
           }
